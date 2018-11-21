@@ -40,67 +40,74 @@ Here's an example test provided in the [MetaCoin Truffle Box](/boxes/metacoin). 
 File: `./test/metacoin.ts`
 
 ```typescript
-var MetaCoin = artifacts.require("MetaCoin")
+const MetaCoin = artifacts.require("MetaCoin");
 
-contract('MetaCoin', function(accounts) {
-  it("should put 10000 MetaCoin in the first account", function() {
-    return MetaCoin.deployed().then(function(instance) {
-      return instance.getBalance.call(accounts[0]);
-    }).then(function(balance) {
-      expect(balance.toNumber()).to.be.deep.eq(10000);
-    });
+contract("MetaCoin", accounts => {
+  it("should put 10000 MetaCoin in the first account", () =>
+    MetaCoin.deployed()
+      .then(instance => instance.getBalance.call(accounts[0]))
+      .then(balance => {
+        expect(balance.toNumber()).to.be.deep.eq(10000);
+      }));
+
+  it("should call a function that depends on a linked library", () => {
+    let meta;
+    let metaCoinBalance;
+    let metaCoinEthBalance;
+    return MetaCoin.deployed()
+      .then(instance => {
+        meta = instance;
+        return meta.getBalance.call(accounts[0]);
+      })
+      .then(outCoinBalance => {
+        metaCoinBalance = outCoinBalance.toNumber();
+        return meta.getBalanceInEth.call(accounts[0]);
+      })
+      .then(outCoinBalanceEth => {
+        metaCoinEthBalance = outCoinBalanceEth.toNumber();
+      })
+      .then(() => {
+        expect(metaCoinEthBalance).to.be.deep.eq(2 * metaCoinBalance);
+      });
   });
-  it("should call a function that depends on a linked library", function() {
-    var meta;
-    var metaCoinBalance;
-    var metaCoinEthBalance;
 
-    return MetaCoin.deployed().then(function(instance) {
-      meta = instance;
-      return meta.getBalance.call(accounts[0]);
-    }).then(function(outCoinBalance) {
-      metaCoinBalance = outCoinBalance.toNumber();
-      return meta.getBalanceInEth.call(accounts[0]);
-    }).then(function(outCoinBalanceEth) {
-      metaCoinEthBalance = outCoinBalanceEth.toNumber();
-    }).then(function() {
-      expect(metaCoinEthBalance).to.be.deep.eq(2 * metaCoinBalance);
-    });
-  });
-  it("should send coin correctly", function() {
-    var meta;
-
+  it("should send coin correctly", () => {
+    let meta;
     // Get initial balances of first and second account.
-    var account_one = accounts[0];
-    var account_two = accounts[1];
-
-    var account_one_starting_balance;
-    var account_two_starting_balance;
-    var account_one_ending_balance;
-    var account_two_ending_balance;
-
-    var amount = 10;
-
-    return MetaCoin.deployed().then(function(instance) {
-      meta = instance;
-      return meta.getBalance.call(account_one);
-    }).then(function(balance) {
-      account_one_starting_balance = balance.toNumber();
-      return meta.getBalance.call(account_two);
-    }).then(function(balance) {
-      account_two_starting_balance = balance.toNumber();
-      return meta.sendCoin(account_two, amount, {from: account_one});
-    }).then(function() {
-      return meta.getBalance.call(account_one);
-    }).then(function(balance) {
-      account_one_ending_balance = balance.toNumber();
-      return meta.getBalance.call(account_two);
-    }).then(function(balance) {
-      account_two_ending_balance = balance.toNumber();
-
-      expect(account_one_ending_balance).to.be.deep.eq(account_one_starting_balance - amount);
-      expect(account_two_ending_balance).to.be.deep.eq(account_two_starting_balance + amount);
-    });
+    const account_one = accounts[0];
+    const account_two = accounts[1];
+    let account_one_starting_balance;
+    let account_two_starting_balance;
+    let account_one_ending_balance;
+    let account_two_ending_balance;
+    const amount = 10;
+    return MetaCoin.deployed()
+      .then(instance => {
+        meta = instance;
+        return meta.getBalance.call(account_one);
+      })
+      .then(balance => {
+        account_one_starting_balance = balance.toNumber();
+        return meta.getBalance.call(account_two);
+      })
+      .then(balance => {
+        account_two_starting_balance = balance.toNumber();
+        return meta.sendCoin(account_two, amount, { from: account_one });
+      })
+      .then(() => meta.getBalance.call(account_one))
+      .then(balance => {
+        account_one_ending_balance = balance.toNumber();
+        return meta.getBalance.call(account_two);
+      })
+      .then(balance => {
+        account_two_ending_balance = balance.toNumber();
+        expect(account_one_ending_balance).to.be.deep.eq(
+          account_one_starting_balance - amount
+        );
+        expect(account_two_ending_balance).to.be.deep.eq(
+          account_two_starting_balance + amount
+        );
+      });
   });
 });
 
